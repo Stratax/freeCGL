@@ -1,0 +1,11 @@
+#!/bin/bash
+for i in `seq 1 360`;
+do
+    bin/./p3 $1 $i > img/$i.ppm;
+    convert img/$i.ppm img/$i.gif;
+    rm img/$i.ppm
+    echo $i.gif done
+done
+
+
+gifsicle --delay 5 --loop img/{1..360}.gif > bin/master.gif
