@@ -9,7 +9,11 @@ int main(int argc, char *argv[]) {
 
     pushRotateZ(180+rot);
     pushRotateX(90+rot);
+    //pushTranslate(0,0,-300);
+    //pushTranslate(0,0,-120);
     loadTransformation(m);
+    //projectModel(m,-200);
+    //projectModel(m,-50);
 
 
     if(rot <= 90)
