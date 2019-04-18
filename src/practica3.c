@@ -5,16 +5,11 @@ int main(int argc, char *argv[]) {
 
     int rot = atoi(argv[2]);
     color c;
-    model m = loadModel(argv[1],100);
+    model m = loadModel(argv[1],200);
 
     pushRotateZ(180+rot);
     pushRotateX(90+rot);
-    //pushTranslate(0,0,-300);
-    //pushTranslate(0,0,-120);
     loadTransformation(m);
-    //projectModel(m,-200);
-    //projectModel(m,-50);
-
 
     if(rot <= 90)
         c = newColor(rot+100, 0, 0);
@@ -25,8 +20,8 @@ int main(int argc, char *argv[]) {
     if(rot > 270)
         c = newColor(260-rot,360-rot,360-rot);
 
-    rasterModel(m,QVGA,c);
-    printPPM(QVGA);
+    rasterModel(m,HD,c);
+    printPPM(HD);
     freeModel(m);
     return 0;
 }

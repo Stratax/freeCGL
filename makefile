@@ -5,6 +5,10 @@ all: bin/p1 bin/p2 bin/p3 bin/p4 bin/p5 bin/raw2vlf
 carpets:
 	mkdir bin img lib obj
 
+bin/test: src/test.c lib/libgraph.a
+	gcc src/test.c -o bin/test -g -Wall -Iinclude -Llib -lgraph -lm
+
+
 bin/p1: src/practica1.c lib/libgraph.a
 	gcc src/practica1.c -o bin/p1 -g -Wall -Iinclude -Llib -lgraph -lm
 

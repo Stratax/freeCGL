@@ -8,7 +8,7 @@
 
 #define PI 3.14159265
     /****************************************/
-    /***  Intituto Ploitécnico Nacional  ****/
+    /***  Instituto Politécnico Nacional  ****/
     /***   Escuela Superior de Cómputo   ****/
     /***        Computer Graphics        ****/
     /***  López Calderón Adrián Alberto  ****/
@@ -19,7 +19,13 @@
 typedef struct {
     int x,y,z;
 }vector;
+
 vector newVector(int x, int y, int z);
+vector crossProduct(vector v1, vector v2);
+float dotProduct(vector v1, vector v2);
+vector addVector(vector v1, vector v2);
+vector restVector(vector v1, vector v2);
+
 
 //Color
 typedef struct{
@@ -69,12 +75,29 @@ typedef struct{
 
 typedef Model *model;
 
+model newModel(int nVertex);
 model loadModel(char* fileName, int scale);
 void rasterModel(model m,resolution res, color c);
 void rasterSolidModel(model m,resolution res, color c);
-void loadTransformation(model m);
 void projectModel(model m, int f);
 void freeModel(model m);
+
+
+void loadTransformation(model m);
+void loadTransformationVector(vector *v1);
+
+//Camera
+typedef struct{
+    vector origin,direction;
+    int focus,ang_x,ang_y,ang_z;
+    model mC;
+}Camera;
+typedef Camera * camera;
+
+camera newCamera(vector origin , int focus, int ang_x, int ang_y, int ang_z);
+void takePhoto(camera cam,model m,resolution res, color c );
+void freeCamera(camera c);
+
 
 //Miscellaneous//
 void swap(int *a, int *b);
@@ -85,6 +108,8 @@ void printVector(vector v);
 void printLine(line l);
 void printModel(model m);
 void printTrans();
-void rasterReference(resolution res, color c);
+void rasterReference(resolution res, color c, int scale);
+void printCamera(camera c);
+void seeCamera(camera c , resolution res);
 
 #endif
