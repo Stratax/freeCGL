@@ -17,7 +17,7 @@ int main(int argc, char const *argv[]) {
         p2 = newVector((rand()%1920)-960,(rand()%1080)-540,0);
         c = newColor(rand()%255,rand()%255,rand()%255);
         l = newLine(p1,p2);
-        rasterLine(l,FHD,c);
+        rasterLine(l,FHD,c,0);
         freeLine(l);
     }
     printPPM(FHD);

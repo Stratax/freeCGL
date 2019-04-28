@@ -1,23 +1,25 @@
 #include<myGraphics.h>
 
+
 int main(int argc, char const *argv[]) {
 
-    color white = newColor(255,255,255);
-    color blue = newColor(0,0,255);
-    vector o = newVector(-200,200,300);
-    camera c = newCamera(o,1000,30,150,0);
-    model m = loadModel("3dModels/ape.vlf",100);
-    pushRotateX(-90);
-    pushRotateY(180);
+    color c = newColor(255,255,255);
+    //color c1 = newColor(255,0,0);
+    model m = loadModel("3dModels/ape.vlf",400);
+    vector o = newVector(0,-1500,0);
+    camera cam1 =newCamera(o,-1500,90,0,0);
+    //pushTranslate(0,0,0);
+    //pushRotateX(-90);
+    //pushRotateY(180);
     loadTransformation(m);
     resetMatrix();
-    //rasterModel(m,FHD,white);
-    //seeCamera(c,FHD);
-    takePhoto(c,m,FHD,white);
-    freeCamera(c);
-    freeModel(m);
-    //rasterReference(FHD,blue,20);
+    initZBuffer();
+    takePhoto(cam1,m,FHD,c,'r');
+    //rasterModel(m,FHD,c1,1);
+    rasterSolidModelRandom(m,FHD,1);
+    //rasterModel(m,FHD,c1,1);
 
     printPPM(FHD);
+    freeModel(m);
     return 0;
 }

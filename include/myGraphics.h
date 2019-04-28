@@ -5,6 +5,7 @@
 #include<stdio.h>
 #include<string.h>
 #include<math.h>
+#include<time.h>
 
 #define PI 3.14159265
     /****************************************/
@@ -21,10 +22,12 @@ typedef struct {
 }vector;
 
 vector newVector(int x, int y, int z);
+float magnitudVector(vector v1);
 vector crossProduct(vector v1, vector v2);
-float dotProduct(vector v1, vector v2);
+int dotProduct(vector v1, vector v2);
 vector addVector(vector v1, vector v2);
 vector restVector(vector v1, vector v2);
+void resizeVector(vector * v1, int scale);
 
 
 //Color
@@ -37,12 +40,14 @@ color newColor(unsigned char r, unsigned char g , unsigned char b);
 unsigned char rasterQVGA[320][240][3];
 unsigned char rasterHD[1280][720][3];
 unsigned char rasterFHD[1920][1080][3];
+int zBuffer[1920][1080];
 
 typedef enum Resolution{QVGA, HD, FHD}resolution;
 
 
 void printPPM(resolution res);
 void clearRaster(resolution res, color c);
+void initZBuffer();
 
 // Transformations
 void pushTranslate(int tx, int ty, int tz);
@@ -55,14 +60,14 @@ void resetMatrix();
 //Line//
 typedef struct{
     vector *points;
-    int dx,dy;
+    int dx,dy,dz;
     int nPoints;
 }Line;
 
 typedef Line *line;
 
 line newLine(vector v1, vector v2);
-void rasterLine(line l,resolution res,color c);
+void rasterLine(line l,resolution res,color c,int buffering);
 void freeLine(line l);
 
 //Model
@@ -77,10 +82,12 @@ typedef Model *model;
 
 model newModel(int nVertex);
 model loadModel(char* fileName, int scale);
-void rasterModel(model m,resolution res, color c);
-void rasterSolidModel(model m,resolution res, color c);
+void rasterModel(model m,resolution res, color c, int buffering);
+void rasterSolidModel(model m,resolution res,color c,int buffering);
+void rasterSolidModelRandom(model m,resolution res,int buffering);
 void projectModel(model m, int f);
 void freeModel(model m);
+
 
 
 void loadTransformation(model m);
@@ -95,12 +102,13 @@ typedef struct{
 typedef Camera * camera;
 
 camera newCamera(vector origin , int focus, int ang_x, int ang_y, int ang_z);
-void takePhoto(camera cam,model m,resolution res, color c );
+void takePhoto(camera cam,model m,resolution res, color c, char t);
 void freeCamera(camera c);
 
 
 //Miscellaneous//
 void swap(int *a, int *b);
+int isSameVector(vector v1, vector v2);
 
 
 //Testing tools//
@@ -110,6 +118,6 @@ void printModel(model m);
 void printTrans();
 void rasterReference(resolution res, color c, int scale);
 void printCamera(camera c);
-void seeCamera(camera c , resolution res);
+void rasterCamera(camera c , resolution res);
 
 #endif

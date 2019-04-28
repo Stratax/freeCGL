@@ -9,7 +9,7 @@ int main(int argc, char *argv[]) {
     pushRotateX(-90);
     loadTransformation(m);
     c  = newColor(120,18,40);
-    rasterModel(m,FHD,c);
+    rasterModel(m,FHD,c,0);
     printPPM(FHD);
     freeModel(m);
     return 0;

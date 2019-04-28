@@ -3,23 +3,26 @@
 int main(int argc, char *argv[]) {
     model m = loadModel(argv[1],400);
 
-    color red,white,black,blue;
+    vector o = newVector(0,0,1500);
+    camera cam1 = newCamera(o,1500,0,0,0);
+    color white,black;
 
     black = newColor(0,0,0);
-    red = newColor(255,0,0);
     white = newColor(255,255,255);
-    blue = newColor(0,0,255);
 
     clearRaster(FHD,white);
 
     pushRotateX(-90);
-    pushTranslate(0,0,-3000);
     loadTransformation(m);
-    rasterModel(m,FHD,black);
+    resetMatrix();
+
+    takePhoto(cam1,m,FHD,black,'s');
+    rasterModel(m,FHD,black,0);
 
     printPPM(FHD);
 
     freeModel(m);
-    
+    freeCamera(cam1);
+
     return 0;
 }

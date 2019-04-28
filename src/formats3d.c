@@ -1,4 +1,5 @@
 #include<formats3d.h>
+
 float vertex[10000][3];
 int edges[10000][2];
 int faces[10000][3];
@@ -10,6 +11,7 @@ void raw2vlf(char * doc){
     float x,y,z;
     int v1,v2,v3,e1,e2,e3;
     int i=0;
+
     //vertex
     obj = fopen(doc,"r");
     while(fgets(chain,100,obj)){

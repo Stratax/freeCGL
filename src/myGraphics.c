@@ -9,6 +9,9 @@ vector newVector(int x, int y, int z){
     v.z = z;
     return v;
 }
+float magnitudVector(vector v1){
+    return sqrt((v1.x * v1.x) + (v1.y * v1.y) + (v1.z * v1.z));
+}
 vector crossProduct(vector v1, vector v2){
     vector vr;
 
@@ -18,7 +21,7 @@ vector crossProduct(vector v1, vector v2){
 
     return vr;
 }
-float dotProduct(vector v1, vector v2){
+int dotProduct(vector v1, vector v2){
     return (v1.x*v2.x) + (v1.y*v2.y) + (v1.z*v2.z);
 }
 vector addVector(vector v1, vector v2){
@@ -37,6 +40,12 @@ vector restVector(vector v1, vector v2){
 
     return vr;
 }
+void resizeVector(vector * v1, int scale){
+        v1->x *= scale;
+        v1->y *= scale;
+        v1->z *= scale;
+}
+
 
 //Color
 color newColor(unsigned char r, unsigned char g , unsigned char b){
@@ -112,6 +121,12 @@ void clearRaster(resolution res, color c){
             }
         break;
     }
+}
+void initZBuffer(){
+    int i,j;
+    for(i = 0 ; i < 1920 ; i++)
+        for(j = 0 ; j < 1080 ; j++)
+            zBuffer[i][j] = -100000;
 }
 
 //Transformations
@@ -242,8 +257,9 @@ line newLine(vector v1, vector v2){
     line l = (line)malloc(sizeof(Line));
     l->dx = v2.x - v1.x;
     l->dy = v2.y - v1.y;
+    l->dz = v2.z - v1.z;
 
-    int dx=l->dx,dy=l->dy,flag=0;
+    int dx=l->dx,dy=l->dy,dz=l->dz,flag=0;
 
     if(dx < 0){
         swap(&v1.x,&v2.x);
@@ -255,68 +271,119 @@ line newLine(vector v1, vector v2){
         flag+=2;
         dy = v2.y-v1.y;
     }
+    if(dz < 0){
+        swap(&v1.z,&v2.z);
+        flag+=4;
+        dz = v2.z-v1.z;
+    }
     if(dy > dx){
         swap(&v1.x,&v1.y);
         swap(&v2.x,&v2.y);
         dx = v2.x-v1.x;
         dy = v2.y-v1.y;
-        flag+=4;
+        flag+=8;
+    }
+    if(dz > dx){
+        swap(&v1.x,&v1.z);
+        swap(&v2.x,&v2.z);
+        dx = v2.x-v1.x;
+        dz = v2.z-v1.z;
+        flag+=16;
     }
 
     l->points = (vector*)malloc(sizeof(vector)*(dx+1));
     l->nPoints = dx+1;
-    int X = v1.x, Y = v1.y, Z = v1.z;
-    int delta = (2*dy)-dx, incE = 2*dy, incNE = 2*(dy-dx),k,j,incK,incJ;
 
-    if((flag&1)==1){
-        k = dx,incK = -1;
-    }else{
-        k = 0,incK = 1;
-    }
-    if((flag&2)==2){
+    int X = v1.x, Y = v1.y, Z = v1.z;
+    int deltaY = (2*dy)-dx, incEy = 2*dy, incNEy = 2*(dy-dx),i,j,k,incI,incJ,incK;
+    int deltaZ = (2*dz)-dx, incEz = 2*dz, incNEz = 2*(dz-dx);
+    if((flag&1)==1)
+        i = dx,incI = -1;
+    else
+        i = 0,incI = 1;
+
+    if((flag&2)==2)
         j = dx,incJ = -1;
-    }else{
+    else
         j = 0,incJ = 1;
-    }
+
+    if((flag&4)==4)
+        k = dx,incK = -1;
+    else
+        k = 0,incK = 1;
+
 
     while(X <= v2.x){
-        if((flag&4)==4){
-            l->points[k].x = Y;
-            l->points[j].y = X;
-            l->points[k].z = Z;
-            j+=incJ;
-            k+=incK;
+        if((flag&8)==8){
+            if((flag&16)==16){
+                l->points[i].x = Y;
+                l->points[j].y = Z;
+                l->points[k].z = X;
+                i+=incI;
+                j+=incJ;
+                k+=incK;
 
+            }else{
+                l->points[i].x = Y;
+                l->points[j].y = X;
+                l->points[k].z = Z;
+                i+=incI;
+                j+=incJ;
+                k+=incK;
+            }
         }else{
-            l->points[k].x = X;
-            l->points[j].y = Y;
-            l->points[k].z = Z;
-            j+=incJ;
-            k+=incK;
+            if((flag&16)==16){
+                l->points[i].x = Z;
+                l->points[j].y = Y;
+                l->points[k].z = X;
+                i+=incI;
+                j+=incJ;
+                k+=incK;
+
+            }else{
+                l->points[i].x = X;
+                l->points[j].y = Y;
+                l->points[k].z = Z;
+                i+=incI;
+                j+=incJ;
+                k+=incK;
+            }
         }
 
-        if(delta > 0){
-            delta += incNE;
-            X++;
+        if(deltaY > 0){
+            deltaY += incNEy;
             Y++;
         }else{
-            delta += incE;
-            X++;
+            deltaY += incEy;
+
         }
+        if(deltaZ > 0){
+            deltaZ += incNEz;
+            Z++;
+        }else{
+            deltaZ += incEz;
+
+        }
+        X++;
+
     }
     return l;
 }
-void rasterLine(line l,resolution res, color c){
-    int i,x,y;
+void rasterLine(line l,resolution res, color c,int buffering){
+    int i,x,y,z;
     switch (res) {
         case QVGA:
         for(i = 0 ; i<l->nPoints ; i++){
             x = l->points[i].x + (320/2);
             y = -(l->points[i].y) + (240/2);
+            z = l->points[i].z;
             if(x < 320 && y < 240 && x >= 0 && y >= 0){
-                rasterQVGA[x][y][0] = c.r;
-                rasterQVGA[x][y][1] = c.g;
-                rasterQVGA[x][y][2] = c.b;
+                if(zBuffer[x][y] < z || !buffering){
+                    rasterQVGA[x][y][0] = c.r;
+                    rasterQVGA[x][y][1] = c.g;
+                    rasterQVGA[x][y][2] = c.b;
+                    zBuffer[x][y] = z;
+                }
             }
         }
         break;
@@ -324,11 +391,14 @@ void rasterLine(line l,resolution res, color c){
         for(i = 0 ; i<l->nPoints ; i++){
             x = l->points[i].x + (1280/2);
             y = -(l->points[i].y) + (720/2);
-
+            z = l->points[i].z;
             if(x < 1280 && y < 720 && x >= 0 && y >= 0){
-                rasterHD[x][y][0] = c.r;
-                rasterHD[x][y][1] = c.g;
-                rasterHD[x][y][2] = c.b;
+                if(zBuffer[x][y] < z || !buffering){
+                    rasterHD[x][y][0] = c.r;
+                    rasterHD[x][y][1] = c.g;
+                    rasterHD[x][y][2] = c.b;
+                    zBuffer[x][y] = z;
+                }
             }
         }
         break;
@@ -336,11 +406,14 @@ void rasterLine(line l,resolution res, color c){
         for(i = 0 ; i<l->nPoints ; i++){
             x = l->points[i].x + (1920/2);
             y = -(l->points[i].y) + (1080/2);
-
+            z = l->points[i].z;
             if(x < 1920 && y < 1080 && x >= 0 && y >= 0){
-                rasterFHD[x][y][0] = c.r;
-                rasterFHD[x][y][1] = c.g;
-                rasterFHD[x][y][2] = c.b;
+                if(zBuffer[x][y] < z || !buffering){
+                    rasterFHD[x][y][0] = c.r;
+                    rasterFHD[x][y][1] = c.g;
+                    rasterFHD[x][y][2] = c.b;
+                    zBuffer[x][y] = z;
+                }
             }
 
 
@@ -400,19 +473,23 @@ model loadModel(char * fileName ,int scale){
         i++;
     }
 
+
     return m;
 }
-void rasterModel(model m,resolution res, color c){
+
+void rasterModel(model m,resolution res, color c,int buffering){
     int i;
     line l;
+
     for(i = 0 ; i < m->nEdges ; i++){
         l = newLine(m->vertex[m->edges[i][0]],m->vertex[m->edges[i][1]]);
-        rasterLine(l,res,c);
+        rasterLine(l,res,c,buffering);
         freeLine(l);
     }
 }
-void rasterSolidModel(model m,resolution res, color c){
-    int i,j,k,sumPoints,maxY,minY;
+
+void rasterSolidModel(model m,resolution res, color c,int buffering){
+    int i,j,k,sumPoints,maxY,minY,minZ,maxZ;
     line l1,l2,l3,lf;
     int e1,e2,e3;
     vector *listPoints, aux1,aux2;
@@ -446,14 +523,82 @@ void rasterSolidModel(model m,resolution res, color c){
             int maxX = -10000, minX = 10000;
             for(k = 0 ; k < sumPoints ; k++){
                 if(listPoints[k].y == j){
-                    maxX = (listPoints[k].x > maxX) ? listPoints[k].x : maxX;
-                    minX = (listPoints[k].x < minX) ? listPoints[k].x : minX;
+                    if(listPoints[k].x > maxX){
+                        maxX = listPoints[k].x;
+                        maxZ = listPoints[k].z;
+                    }
+                    if(listPoints[k].x < minX){
+                        minX = listPoints[k].x;
+                        minZ = listPoints[k].z;
+                    }
                 }
             }
-            aux1 = newVector(minX,j,0);
-            aux2 = newVector(maxX,j,0);
+            aux1 = newVector(minX,j,minZ);
+            aux2 = newVector(maxX,j,maxZ);
             lf = newLine(aux1, aux2);
-            rasterLine(lf,res,c);
+            rasterLine(lf,res,c,buffering);
+            freeLine(lf);
+
+        }
+        freeLine(l1);
+        freeLine(l2);
+        freeLine(l3);
+        free(listPoints);
+
+    }
+}
+void rasterSolidModelRandom(model m,resolution res,int buffering){
+    int i,j,k,sumPoints,maxY,minY,maxZ,minZ;
+    line l1,l2,l3,lf;
+    int e1,e2,e3;
+    vector *listPoints, aux1,aux2;
+    color c;
+    srand(time(NULL));
+
+    for(i = 0 ; i < m->nFaces ; i++){
+        c = newColor(30,rand()%255,30);
+        e1 = m->faces[i][0];
+        e2 = m->faces[i][1];
+        e3 = m->faces[i][2];
+        l1 = newLine(m->vertex[m->edges[e1][0]],m->vertex[m->edges[e1][1]]);
+        l2 = newLine(m->vertex[m->edges[e2][0]],m->vertex[m->edges[e2][1]]);
+        l3 = newLine(m->vertex[m->edges[e3][0]],m->vertex[m->edges[e3][1]]);
+        sumPoints = l1->nPoints + l2->nPoints + l3->nPoints;
+        listPoints = (vector*)malloc(sizeof(vector)*sumPoints);
+        for(j = 0 ; j < l1->nPoints ; j++ ){
+            listPoints[j] = l1->points[j];
+        }
+        for(j = l1->nPoints ; j < l2->nPoints+l1->nPoints ; j++ ){
+            listPoints[j] = l2->points[j-l1->nPoints];
+        }
+        for(j = l1->nPoints+l2->nPoints ; j < sumPoints ; j++ ){
+            listPoints[j] = l3->points[j-l1->nPoints-l2->nPoints];
+        }
+
+        maxY = -3000; minY = listPoints[0].y;
+        for(j = 0 ; j < sumPoints ; j++){
+            maxY = (listPoints[j].y > maxY) ? listPoints[j].y : maxY;
+            minY = (listPoints[j].y < minY) ? listPoints[j].y : minY;
+        }
+
+        for(j = minY ; j < maxY ; j++){
+            int maxX = -10000, minX = 10000;
+            for(k = 0 ; k < sumPoints ; k++){
+                if(listPoints[k].y == j){
+                    if(listPoints[k].x > maxX){
+                        maxX = listPoints[k].x;
+                        maxZ = listPoints[k].z;
+                    }
+                    if(listPoints[k].x < minX){
+                        minX = listPoints[k].x;
+                        minZ = listPoints[k].z;
+                    }
+                }
+            }
+            aux1 = newVector(minX,j,minZ);
+            aux2 = newVector(maxX,j,maxZ);
+            lf = newLine(aux1, aux2);
+            rasterLine(lf,res,c,buffering);
             freeLine(lf);
 
         }
@@ -471,8 +616,9 @@ void projectModel(model m , int f){
         aux = m->vertex[i];
         m->vertex[i].x = ((float)f * aux.x / (float)aux.z);
         m->vertex[i].y = ((float)f * aux.y / (float)aux.z);
-        m->vertex[i].z = f;
+        //m->vertex[i].z = f;
     }
+
 }
 void freeModel(model m){
     free(m->vertex);
@@ -488,15 +634,16 @@ void loadTransformation(model m){
         m->vertex[i].y = (transM[1][0]*aux.x)+(transM[1][1]*aux.y)+(transM[1][2]*aux.z)+(transM[1][3]);
         m->vertex[i].z = (transM[2][0]*aux.x)+(transM[2][1]*aux.y)+(transM[2][2]*aux.z)+(transM[2][3]);
     }
-    //resetMatrix();
+
 }
+
 void loadTransformationVector(vector *v1){
     vector aux = *v1;
 
     v1->x = (transM[0][0]*aux.x)+(transM[0][1]*aux.y)+(transM[0][2]*aux.z)+(transM[0][3]);
     v1->y = (transM[1][0]*aux.x)+(transM[1][1]*aux.y)+(transM[1][2]*aux.z)+(transM[1][3]);
     v1->z = (transM[2][0]*aux.x)+(transM[2][1]*aux.y)+(transM[2][2]*aux.z)+(transM[2][3]);
-    //resetMatrix();
+
 }
 
 //Camera
@@ -569,17 +716,21 @@ camera newCamera(vector origin , int focus, int ang_x, int ang_y, int ang_z){
     resetMatrix();
     return c;
 }
-void takePhoto(camera cam,model m,resolution res, color c ){
+void takePhoto(camera cam,model m,resolution res, color c,char t){
     pushTranslate(-(cam->origin.x),-(cam->origin.y),-(cam->origin.z));
     pushRotateZ(-(cam->ang_z));
     pushRotateY(-(cam->ang_y));
     pushRotateX(-(cam->ang_x));
 
     loadTransformation(m);
-    //rasterModel(m,res,c);
     projectModel(m,cam->focus);
 
-    rasterModel(m,res,c);
+    /*if(t == 's')
+        rasterSolidModel(m,res,c,1);
+    if(t == 'w')
+        rasterModel(m,res,c,1);
+    if(t == 'r')
+        rasterSolidModelRandom(m,res,1);*/
     resetMatrix();
 }
 void freeCamera(camera c){
@@ -595,6 +746,15 @@ void swap(int *a, int *b){
     *a = *b;
     *b = temp;
 }
+int isSameVector(vector v1, vector v2){
+
+    if((v1.x == v2.x) && (v1.y == v2.y) && (v1.z == v2.z))
+        return 1;
+    else
+        return 0;
+
+    return 0;
+}
 
 
 //Testing tools
@@ -605,6 +765,7 @@ void printLine(line l){
     int i = 0;
     printf("dx: %d\n", l->dx);
     printf("dy: %d\n", l->dy);
+    printf("dy: %d\n", l->dz);
     printf("x\ty\tz\n-----------\n");
     for(i = 0 ; i < l->nPoints ; i++){
         printf("%d\t%d\t%d\n",l->points[i].x,l->points[i].y,l->points[i].z );
@@ -623,6 +784,7 @@ void printModel(model m){
     for(i = 0 ; i < m->nFaces ; i++){
         printf("%d %d %d \n",m->faces[i][0],m->faces[i][1],m->faces[i][2]);
     }
+
 }
 void printTrans(){
     int i,j;
@@ -676,10 +838,10 @@ void rasterReference(resolution res,color c, int scale){
         y1 = newVector(-10,-(i),0);
         y2 = newVector(10,-(i),0);
         lm = newLine(x1,x2);
-        rasterLine(lm,res,c);
+        rasterLine(lm,res,c,0);
         freeLine(lm);
         lm = newLine(y1,y2);
-        rasterLine(lm,res,c);
+        rasterLine(lm,res,c,0);
         freeLine(lm);
 
         i+=scale;
@@ -690,16 +852,16 @@ void rasterReference(resolution res,color c, int scale){
         y1 = newVector(-j,-10,0);
         y2 = newVector(-j,10,0);
         lm = newLine(x1,x2);
-        rasterLine(lm,res,c);
+        rasterLine(lm,res,c,0);
         freeLine(lm);
         lm = newLine(y1,y2);
-        rasterLine(lm,res,c);
+        rasterLine(lm,res,c,0);
         freeLine(lm);
 
         j+=scale;
     }
-    rasterLine(lx,res,c);
-    rasterLine(ly,res,c);
+    rasterLine(lx,res,c,0);
+    rasterLine(ly,res,c,0);
     freeLine(lx);
     freeLine(ly);
 }
@@ -712,12 +874,12 @@ void printCamera(camera c){
     printf("Focus: \n %d",c->focus);
 
 }
-void seeCamera(camera c , resolution res){
+void rasterCamera(camera c , resolution res){
     color green = newColor(0,255,0);
     color red = newColor(255,0,0);
 
     line fd = newLine(c->origin, c->direction);
-    rasterModel(c->mC,res,green);
-    rasterLine(fd,res,red);
+    rasterModel(c->mC,res,green,0);
+    rasterLine(fd,res,red,0);
     freeLine(fd);
 }
