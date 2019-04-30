@@ -73,15 +73,17 @@ void freeLine(line l);
 //Model
 typedef struct{
     vector *vertex;
+    vector *normals;
     int edges[10000][2];
     int faces[10000][3];
-    int nVertex,nEdges,nFaces;
+    int nVertex,nEdges,nFaces,nNormals;
 }Model; //VLF fortmat
 
 typedef Model *model;
 
 model newModel(int nVertex);
 model loadModel(char* fileName, int scale);
+void calculateNormals(model m);
 void rasterModel(model m,resolution res, color c, int buffering);
 void rasterSolidModel(model m,resolution res,color c,int buffering);
 void rasterSolidModelRandom(model m,resolution res,int buffering);
@@ -109,7 +111,10 @@ void freeCamera(camera c);
 //Miscellaneous//
 void swap(int *a, int *b);
 int isSameVector(vector v1, vector v2);
-
+vector findFaceVectors(int face, model m);
+int findEdge(int v1, int v2,model m);
+int findFace(int edge,int face, model m);
+int findThe3erVector(int v1,int v2,int face,model m);
 
 //Testing tools//
 void printVector(vector v);
@@ -119,5 +124,6 @@ void printTrans();
 void rasterReference(resolution res, color c, int scale);
 void printCamera(camera c);
 void rasterCamera(camera c , resolution res);
+void rasterNormals(model m,resolution res,color c);
 
 #endif

@@ -1,5 +1,7 @@
 #include<myGraphics.h>
-
+//TODO
+// create function vector normal(vector pivot,vector from, vector to);
+// and implements on calculateNormals.
 
 //Vector
 vector newVector(int x, int y, int z){
@@ -473,8 +475,189 @@ model loadModel(char * fileName ,int scale){
         i++;
     }
 
-
+    m->nNormals = m->nVertex + m->nEdges + m->nFaces;
+    m->normals = (vector*)malloc(sizeof(vector)*m->nNormals);
+    calculateNormals(m);
     return m;
+}
+
+void calculateNormals(model m){
+
+    int i,theFace,v1,v2,v3,ang,flag=1,e;
+    vector norm,index;
+    float average, maxAverage=-100000;
+
+    //Find the most z faces
+    for(i = 0 ; i < m->nFaces ; i++){
+        index = findFaceVectors(i,m);
+        average = (m->vertex[index.x].z+m->vertex[index.y].z+m->vertex[index.z].z)/3;
+        if(average > maxAverage){
+            theFace = i;
+            maxAverage = average;
+            v1 = index.x;
+            v2 = index.y;
+            v3 = index.z;
+        }
+    }
+
+    vector pivot,from,to;
+    pivot = m->vertex[v1];
+    from = m->vertex[v2];
+    to = m->vertex[v3];
+
+    pushTranslate(-pivot.x,-pivot.y,-pivot.z);
+    loadTransformationVector(&from);
+    loadTransformationVector(&to);
+    resetMatrix();
+    norm = crossProduct(from,to);
+    ang = dotProduct(newVector(0,0,-10),norm);
+    if(ang > 0){
+        norm = crossProduct(to,from);
+        swap(&v2,&v3);
+    }
+
+    m->normals[theFace] = newVector(5*norm.x/magnitudVector(norm),5*norm.y/magnitudVector(norm),5*norm.z/magnitudVector(norm));
+
+    int preFace;
+
+    while(flag){
+        e = findEdge(v3,v2,m);
+        preFace = theFace;
+        theFace = findFace(e,theFace,m);
+        if(magnitudVector(m->normals[theFace])){
+            e = findEdge(v3,v1,m);
+            theFace = findFace(e,preFace,m);
+            if(magnitudVector(m->normals[theFace])){
+                for(i = 0 ; i < m->nFaces ; i++){
+                    if(magnitudVector(m->normals[i])){
+                        flag=0;
+                    }else{
+                        index = findFaceVectors(i,m);
+                        e = findEdge(index.x,index.y,m);
+                        theFace = findFace(e,i,m);
+                        v3 = findThe3erVector(index.x,index.y,theFace,m);
+                        if(magnitudVector(m->normals[theFace])){
+                            pivot = m->vertex[index.y];
+                            from = m->vertex[index.x];
+                            to = m->vertex[v3];
+                            pushTranslate(-pivot.x,-pivot.y,-pivot.z);
+                            loadTransformationVector(&from);
+                            loadTransformationVector(&to);
+                            resetMatrix();
+                            norm = crossProduct(from,to);
+                            if(dotProduct(norm,m->normals[theFace]) > 0){
+                                v1 = index.x;
+                                v2 = index.y;
+                                v3 = findThe3erVector(v1,v2,i,m);
+
+                            }else{
+                                printf("Inverse\n");
+                                v1 = index.y;
+                                v2 = index.x;
+                                v3 = findThe3erVector(v1,v2,i,m);
+
+                            }
+
+                        }else{
+                            e = findEdge(index.y,index.z,m);
+                            theFace = findFace(e,i,m);
+                            v3 = findThe3erVector(index.y,index.z,theFace,m);
+                            if(magnitudVector(m->normals[theFace])){
+                            pivot = m->vertex[index.z];
+                            from = m->vertex[index.y];
+                            to = m->vertex[v3];
+                            pushTranslate(-pivot.x,-pivot.y,-pivot.z);
+                            loadTransformationVector(&from);
+                            loadTransformationVector(&to);
+                            resetMatrix();
+                            norm = crossProduct(from,to);
+                            if(dotProduct(norm,m->normals[theFace]) > 0){
+                                v1 = index.y;
+                                v2 = index.z;
+                                v3 = findThe3erVector(v1,v2,i,m);
+
+                            }else{
+                                printf("Inverse\n");
+                                v1 = index.z;
+                                v2 = index.y;
+                                v3 = findThe3erVector(v1,v2,i,m);
+
+                            }
+                            }else{
+                                e = findEdge(index.z,index.x,m);
+                                theFace = findFace(e,i,m);
+                                v3 = findThe3erVector(index.z,index.x,theFace,m);
+                                if(magnitudVector(m->normals[theFace])){
+                                    pivot = m->vertex[index.x];
+                                    from = m->vertex[index.z];
+                                    to = m->vertex[v3];
+                                    pushTranslate(-pivot.x,-pivot.y,-pivot.z);
+                                    loadTransformationVector(&from);
+                                    loadTransformationVector(&to);
+                                    resetMatrix();
+                                    norm = crossProduct(from,to);
+                                    if(dotProduct(norm,m->normals[theFace]) > 0){
+                                        v1 = index.z;
+                                        v2 = index.x;
+                                        v3 = findThe3erVector(v1,v2,i,m);
+
+                                    }else{
+                                        printf("Inverse\n");
+                                        v1 = index.x;
+                                        v2 = index.z;
+                                        v3 = findThe3erVector(v1,v2,i,m);
+
+                                    }
+                                }
+                            }
+                        }
+
+                        pivot = m->vertex[v1];
+                        from = m->vertex[v2];
+                        to = m->vertex[v3];
+                        theFace = i;
+                        pushTranslate(-pivot.x,-pivot.y,-pivot.z);
+                        loadTransformationVector(&from);
+                        loadTransformationVector(&to);
+                        resetMatrix();
+                        norm = crossProduct(from,to);
+                        m->normals[theFace]=newVector(5*norm.x/magnitudVector(norm),5*norm.y/magnitudVector(norm),5*norm.z/magnitudVector(norm));
+                        break;
+                    }
+                }
+
+                flag =0;
+            }else{
+                v2 = v3;
+                v3 = findThe3erVector(v1,v2,theFace,m);
+                pivot = m->vertex[v1];
+                from = m->vertex[v2];
+                to = m->vertex[v3];
+                pushTranslate(-pivot.x,-pivot.y,-pivot.z);
+                loadTransformationVector(&from);
+                loadTransformationVector(&to);
+                resetMatrix();
+                norm = crossProduct(from,to);
+                m->normals[theFace]=newVector(5*norm.x/magnitudVector(norm),5*norm.y/magnitudVector(norm),5*norm.z/magnitudVector(norm));
+            }
+
+
+        }else{
+            v1 = v3;
+            v3 = findThe3erVector(v1,v2,theFace,m);
+            pivot = m->vertex[v1];
+            from = m->vertex[v2];
+            to = m->vertex[v3];
+            pushTranslate(-pivot.x,-pivot.y,-pivot.z);
+            loadTransformationVector(&from);
+            loadTransformationVector(&to);
+            resetMatrix();
+            norm = crossProduct(from,to);
+            m->normals[theFace]=newVector(5*norm.x/magnitudVector(norm),5*norm.y/magnitudVector(norm),5*norm.z/magnitudVector(norm));
+
+        }
+        //flag = 0;
+    }
 }
 
 void rasterModel(model m,resolution res, color c,int buffering){
@@ -622,6 +805,7 @@ void projectModel(model m , int f){
 }
 void freeModel(model m){
     free(m->vertex);
+    free(m->normals);
     free(m);
 }
 
@@ -633,6 +817,12 @@ void loadTransformation(model m){
         m->vertex[i].x = (transM[0][0]*aux.x)+(transM[0][1]*aux.y)+(transM[0][2]*aux.z)+(transM[0][3]);
         m->vertex[i].y = (transM[1][0]*aux.x)+(transM[1][1]*aux.y)+(transM[1][2]*aux.z)+(transM[1][3]);
         m->vertex[i].z = (transM[2][0]*aux.x)+(transM[2][1]*aux.y)+(transM[2][2]*aux.z)+(transM[2][3]);
+    }
+    for(i = 0 ; i < m->nFaces ; i++){
+        aux = m->normals[i];
+        m->normals[i].x = (transM[0][0]*aux.x)+(transM[0][1]*aux.y)+(transM[0][2]*aux.z)+(transM[0][3]);
+        m->normals[i].y = (transM[1][0]*aux.x)+(transM[1][1]*aux.y)+(transM[1][2]*aux.z)+(transM[1][3]);
+        m->normals[i].z = (transM[2][0]*aux.x)+(transM[2][1]*aux.y)+(transM[2][2]*aux.z)+(transM[2][3]);
     }
 
 }
@@ -755,8 +945,74 @@ int isSameVector(vector v1, vector v2){
 
     return 0;
 }
+vector findFaceVectors(int face,model m){
+    vector index;
 
 
+    int e1 = m->faces[face][0];
+    int e2 = m->faces[face][1];
+    int e3 = m->faces[face][2];
+    index.x = m->edges[e1][0];
+    index.y = m->edges[e1][1];
+
+    if(!isSameVector(m->vertex[index.x],m->vertex[m->edges[e2][0]]) && !isSameVector(m->vertex[index.y],m->vertex[m->edges[e2][0]]))
+        index.z = m->edges[e2][0];
+    else
+        if(!isSameVector(m->vertex[index.x],m->vertex[m->edges[e2][1]]) && !isSameVector(m->vertex[index.y],m->vertex[m->edges[e2][1]]))
+            index.z =m->edges[e2][1];
+        else
+            if(!isSameVector(m->vertex[index.x],m->vertex[m->edges[e3][0]]) && !isSameVector(m->vertex[index.y],m->vertex[m->edges[e3][0]]))
+                index.z = m->edges[e3][0];
+            else
+                index.z = m->edges[e3][1];
+
+    return index;
+}
+int findEdge(int v1, int v2, model m){
+    int i;
+    for(i = 0 ; i < m->nEdges; i++){
+        if((v1 == m->edges[i][0] && v2== m->edges[i][1]) || (v1 == m->edges[i][1] && v2== m->edges[i][0]))
+            return i;
+    }
+    return -1;
+}
+int findFace(int edge, int face, model m){
+    int i;
+    for(i = 0 ; i < m->nFaces; i++){
+        if((edge == m->faces[i][0] || edge== m->faces[i][1] || edge == m->faces[i][2]) && face != i)
+            return i;
+    }
+    return -1;
+}
+int findThe3erVector(int v1, int v2,int face,model m){
+    int r;
+
+    int e1 = m->faces[face][0];
+    int e2 = m->faces[face][1];
+    int e3 = m->faces[face][2];
+    if(v1 == m->edges[e1][0] || v2 == m->edges[e1][0]){
+        if(v1 == m->edges[e1][1] || v2 == m->edges[e1][1]){
+            if(v1 == m->edges[e2][0] || v2 == m->edges[e2][0]){
+                if(v1 == m->edges[e2][1] || v2 == m->edges[e2][1]){
+                    if(v1 == m->edges[e3][0] || v2 == m->edges[e3][0]){
+                        r = m->edges[e3][1];
+                    }else{
+                        r = m->edges[e3][0];
+                    }
+                }else{
+                    r = m->edges[e2][1];
+                }
+            }else{
+                r = m->edges[e2][0];
+            }
+        }else{
+            r = m->edges[e1][1];
+        }
+    }else{
+        r = m->edges[e1][0];
+    }
+    return r;
+}
 //Testing tools
 void printVector(vector v){
     printf("p(%d,%d,%d)\n",v.x,v.y,v.z);
@@ -783,6 +1039,9 @@ void printModel(model m){
     }
     for(i = 0 ; i < m->nFaces ; i++){
         printf("%d %d %d \n",m->faces[i][0],m->faces[i][1],m->faces[i][2]);
+    }
+    for(i = 0 ; i < m->nNormals ; i++){
+        printVector(m->normals[i]);
     }
 
 }
@@ -882,4 +1141,16 @@ void rasterCamera(camera c , resolution res){
     rasterModel(c->mC,res,green,0);
     rasterLine(fd,res,red,0);
     freeLine(fd);
+}
+void rasterNormals(model m,resolution res, color c){
+
+        int i;
+        line l;
+        vector v = newVector(0,0,0);
+        for(i = 0 ; i < m->nFaces ; i++){
+            l = newLine(m->normals[i],v);
+            rasterLine(l,res,c,0);
+            freeLine(l);
+        }
+
 }
