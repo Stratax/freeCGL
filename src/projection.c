@@ -11,14 +11,12 @@ int main(int argc, char *argv[]) {
     white = newColor(255,255,255);
 
     clearRaster(FHD,white);
-
-    pushRotateX(-90);
+    pushRotateX(90);
     loadTransformation(m);
     resetMatrix();
 
     takePhoto(cam1,m,FHD,black,'s');
     rasterModel(m,FHD,black,0);
-
     printPPM(FHD);
 
     freeModel(m);

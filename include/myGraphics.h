@@ -29,7 +29,6 @@ vector addVector(vector v1, vector v2);
 vector restVector(vector v1, vector v2);
 void resizeVector(vector * v1, int scale);
 
-
 //Color
 typedef struct{
     unsigned char r,g,b;
@@ -71,7 +70,9 @@ void rasterLine(line l,resolution res,color c,int buffering);
 void freeLine(line l);
 
 //Model
+
 typedef struct{
+    color col;
     vector *vertex;
     vector *normals;
     int edges[10000][2];
@@ -82,10 +83,10 @@ typedef struct{
 typedef Model *model;
 
 model newModel(int nVertex);
-model loadModel(char* fileName, int scale);
-void calculateNormals(model m);
-void rasterModel(model m,resolution res, color c, int buffering);
-void rasterSolidModel(model m,resolution res,color c,int buffering);
+model loadModel(char* fileName, color c, int scale);
+void rasterModel(model m,resolution res,int buffering);
+void rasterModelNormal(model m,resolution res);
+void rasterSolidModel(model m,resolution res,int buffering);
 void rasterSolidModelRandom(model m,resolution res,int buffering);
 void projectModel(model m, int f);
 void freeModel(model m);
@@ -111,10 +112,7 @@ void freeCamera(camera c);
 //Miscellaneous//
 void swap(int *a, int *b);
 int isSameVector(vector v1, vector v2);
-vector findFaceVectors(int face, model m);
-int findEdge(int v1, int v2,model m);
-int findFace(int edge,int face, model m);
-int findThe3erVector(int v1,int v2,int face,model m);
+vector findVertexFace(model m,int face);
 
 //Testing tools//
 void printVector(vector v);
@@ -124,6 +122,5 @@ void printTrans();
 void rasterReference(resolution res, color c, int scale);
 void printCamera(camera c);
 void rasterCamera(camera c , resolution res);
-void rasterNormals(model m,resolution res,color c);
 
 #endif

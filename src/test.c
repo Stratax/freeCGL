@@ -3,20 +3,14 @@
 
 int main(int argc, char const *argv[]) {
 
-    color red = newColor(255,0,0);
-    color white = newColor(255,255,255);
-    model m = loadModel("3dModels/cube.vlf",300);
-
-    pushRotateX(45);
-    pushRotateY(45);
-    loadTransformation(m);
-    resetMatrix();
-    initZBuffer();
-    rasterModel(m,FHD,white,1);
-    rasterNormals(m,FHD,red);
-
-    printPPM(FHD);
-    //printModel(m);
-    freeModel(m);
+    vector Normal = newVector(0,0,1);
+    vector Normal1 = Normal;
+    vector Ang =newVector(-1,1,0);
+    float cs1 = dotProduct(Normal,Ang)/(magnitudVector(Ang));
+    resizeVector(&Normal,2);
+    vector r = restVector(Normal,Ang);
+    float cs = dotProduct(Normal1,r)/(magnitudVector(Ang));
+    printVector(r);
+    printf("\n%f, %f\n",cs1,cs);
     return 0;
 }
