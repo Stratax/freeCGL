@@ -6,7 +6,7 @@ OBJDIR := obj
 CFLAGS = -g -Wall
 LDFLAGS = -lgraph -lm
 
-pract := $(addprefix $(BINDIR)/,1000lines model rotation projection solid test light)
+pract := $(addprefix $(BINDIR)/,1000lines model rotation projection solid test light curve)
 libs := $(addprefix $(LIBDIR)/,libgraph.a)
 
 all: $(pract)
