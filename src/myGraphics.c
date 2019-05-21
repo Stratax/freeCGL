@@ -919,6 +919,7 @@ void freeCamera(camera c){
 //---------------------------------------------------------------------------------------------//
 /////////////////////////////////////////////////////////////////////////////////////////////////
 //--------------------------------------Light--------------------------------------------------//
+//need improvement
 void setAmbientLight(color c){
     ambient = c;
 }
@@ -980,8 +981,8 @@ spot newSpot(vecI position,color c, vecF abc, int ang,int ang_x,int ang_y,int an
     spot sp;
     sp.norm =newVecF(0,-1,0);
     pushRotateX(ang_x);
-    pushRotateX(ang_y);
-    pushRotateX(ang_z);
+    pushRotateY(ang_y);
+    pushRotateZ(ang_z);
     loadTransformationVecF(&sp.norm);
     resetMatrix();
     sp.position = position;
@@ -1070,18 +1071,18 @@ color diffuseLightPoint(listLRad rd,listLSpot sp, vecI point,vecF n){
     for(i = 0 ; i < sp->length ; i++){
         ls = getListLSpot(sp,i);
         r = ls.norm;
-
         resizeVecF(&r,-1);
+        r = normalizeVecF(r);
         l = presicionVecI(ls.position);
         loadTransformationVecF(&l);
         l = normalizeVecF(l);
         d = lengthVecI(ls.position);
         ls.at = 1/((ls.abc.x*d*d)+(ls.abc.y*d)+ls.abc.z);
 
-        cosA = dotVecF(n,l);
+        cosA = dotVecF(n,r);
         cosN = dotVecF(r,l);
         cosL = cos(ls.ang*PI/180.0);
-        if(cosN >= 0 && cosN <= cosL)
+        if(!(dotVecF(n,r)>0 && cosN > 0 && cosN < cosL))
             c1=addColor(c1,newColor(ls.at*cosA*ls.c.r,ls.at*cosA*ls.c.g,ls.at*cosA*ls.c.b));
         else
             c1=addColor(c1,newColor(0,0,0));
@@ -1093,19 +1094,18 @@ color diffuseLightPoint(listLRad rd,listLSpot sp, vecI point,vecF n){
 }
 color specularLightPoint(int n_s,listLRad rd, listLSpot sp,vecI point,vecF n){
     int i;
-    vecF l,r;
+    vecF l,r,nl;
     vecF camera = newVecF(0,0,1.0);
-    float d,cosA,cosB;
+    float d,cosA,cosB,cosL,cosN;
     color c1 = newColor(0,0,0);
     radial lr;
+    spot ls;
+    pushTranslate(-point.x,-point.y,-point.z);
     for(i = 0 ; i < rd->length ; i++){
         lr = getListLRad(rd,i);
         l = presicionVecI(lr.position);
-        pushTranslate(-point.x,-point.y,-point.z);
         loadTransformationVecF(&l);
-        resetMatrix();
         l = normalizeVecF(l);
-        r = calculateReflected(l,n);
         d = lengthVecI(lr.position);
         lr.at = 1/((lr.abc.x*d*d)+(lr.abc.y*d)+lr.abc.z);
 
@@ -1119,6 +1119,29 @@ color specularLightPoint(int n_s,listLRad rd, listLSpot sp,vecI point,vecF n){
             c1=addColor(c1,newColor(0,0,0));
 
     }
+    for(i = 0 ; i < sp->length ; i++){
+        ls = getListLSpot(sp,i);
+        nl = ls.norm;
+        resizeVecF(&nl,-1);
+        nl = normalizeVecF(nl);
+        l = presicionVecI(ls.position);
+        loadTransformationVecF(&l);
+        l = normalizeVecF(l);
+        r = calculateReflected(l,n);
+        d = lengthVecI(ls.position);
+        ls.at = 1/((ls.abc.x*d*d)+(ls.abc.y*d)+ls.abc.z);
+
+        cosA = dotVecF(n,nl);
+        cosB = dotVecF(camera,r);
+        cosN = dotVecF(nl,l);
+        cosL = cos(ls.ang*PI/180.0);
+        if(!(dotVecF(nl,r)>0 && cosN > 0 && cosN < cosL))
+            c1=addColor(c1,newColor(ls.at*cosB*ls.c.r,ls.at*cosB*ls.c.g,ls.at*cosB*ls.c.b));
+        else
+            c1=addColor(c1,newColor(0,0,0));
+
+    }
+    resetMatrix();
     return c1;
 }
 
@@ -1258,6 +1281,11 @@ void printSpot(spot sp){
     printVecF("AteValues: ", sp.abc);
     printf("Angulo: %d\n", sp.ang);
 }
+//---------------------------------------------------------------------------------------------//
+/////////////////////////////////////////////////////////////////////////////////////////////////
+//--------------------------------------Curve--------------------------------------------------//
+float hermiteMT[4][4]={{2,-2,1,1},{-3,3,-2,-1},{0,0,1,0},{1,0,0,0}};
+
 //--------------------------------------------------------------------------------------------//
 /////////////////////////////////////////////////////////////////////////////////////////////////
 //------------------------------------Miscellaneous--------------------------------------------//
