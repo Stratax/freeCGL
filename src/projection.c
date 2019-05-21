@@ -1,26 +1,46 @@
 #include<myGraphics.h>
 
 int main(int argc, char *argv[]) {
-    model m = loadModel(argv[1],400);
 
-    vector o = newVector(0,0,1500);
-    camera cam1 = newCamera(o,1500,0,0,0);
+    initZBuffer(-100000);
     color white,black;
 
     black = newColor(0,0,0);
     white = newColor(255,255,255);
 
-    clearRaster(FHD,white);
-    pushRotateX(90);
-    loadTransformation(m);
+    material mat = newMaterial(white,2);
+    model m1 = loadModel(argv[1],mat,200);
+    model m2 = loadModel(argv[1],mat,200);
+
+    vecI o1 = newVecI(50,0,700);
+    vecI o2 = newVecI(-50,0,700);
+    camera cam1 = newCamera(o1,550,0,0,0);
+    camera cam2 = newCamera(o2,550,0,0,0);
+
+    pushRotateX(-90);
+    loadTransformation(m1);
+    loadTransformation(m2);
     resetMatrix();
 
-    takePhoto(cam1,m,FHD,black,'s');
-    rasterModel(m,FHD,black,0);
-    printPPM(FHD);
+    takePhoto(cam1,m1);
+    takePhoto(cam2,m2);
 
-    freeModel(m);
+    pushTranslate((960/4),0,0);
+    loadTransformation(m1);
+    resetMatrix();
+    pushTranslate(-(960/4),0,0);
+    loadTransformation(m2);
+    resetMatrix();
+
+
+    rasterModel(m1,VR,'r',1);
+    rasterModel(m2,VR,'r',1);
+    printPPM(VR);
+
+    freeModel(m1);
+    freeModel(m2);
     freeCamera(cam1);
+    freeCamera(cam2);
 
     return 0;
 }
