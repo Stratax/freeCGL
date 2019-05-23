@@ -344,7 +344,117 @@ void printVecI(char * label,vecI v){
 void printVecF(char * label,vecF v){
     printf("%s %f | %f | %f\n",label,v.x,v.y,v.z);
 }
+//-----------------------------------------------------------------------------//
+/////////////////////////////////////////////////////////////////////////////////
+//----------------------------------Matrix------------------------------------//
+matrix newMatrix(int x, int y){
+    matrix m = (matrix)malloc(sizeof(Matrix));
+    int i;
+    m->x =x;
+    m->y=y;
+    m->v = (float**)malloc(sizeof(float*)*x);
+    for(i = 0 ; i < x ; i++){
+        m->v[i] = (float*)malloc(sizeof(float)*y);
+    };
+    clearMatrix(m);
+    return m;
+}
+matrix hermiteMatrix(){
+    matrix m = newMatrix(4,4);
+    clearMatrix(m);
+    setValueMatrix(m,0,0,2);
+    setValueMatrix(m,0,1,-2);
+    setValueMatrix(m,0,2,1);
+    setValueMatrix(m,0,3,1);
+    setValueMatrix(m,1,0,-3);
+    setValueMatrix(m,1,1,3);
+    setValueMatrix(m,1,2,-2);
+    setValueMatrix(m,1,3,-1);
+    setValueMatrix(m,2,2,1);
+    setValueMatrix(m,3,0,1);
+    return m;
+}
+matrix bezierMatrix(){
+    matrix m = newMatrix(4,4);
+    clearMatrix(m);
+    setValueMatrix(m,0,0,-1);
+    setValueMatrix(m,0,1,3);
+    setValueMatrix(m,0,2,-3);
+    setValueMatrix(m,0,3,1);
+    setValueMatrix(m,1,0,3);
+    setValueMatrix(m,1,1,-6);
+    setValueMatrix(m,1,2,3);
+    setValueMatrix(m,2,0,-3);
+    setValueMatrix(m,2,1,3);
+    setValueMatrix(m,3,0,1);
+    return m;
+}
+void setValueMatrix(matrix m,int x, int y, float v){
+    m->v[x][y] = v;
+}
+void clearMatrix(matrix m){
+    int i,j;
+    for(i = 0 ; i < m->x ; i++){
+        for(j = 0 ; j < m->y ; j++){
+            setValueMatrix(m,i,j,0);
+        }
 
+    }
+
+}
+matrix productMatrix(matrix m1, matrix m2){
+    if(m1->y == m2->x){
+        matrix m = newMatrix(m1->x,m2->y);
+        int i,j,k;
+        float v = 0;
+        for(i = 0 ; i < m1->x ; i++){
+            for(j = 0 ; j < m2->y; j++){
+                for(k  = 0 ; k < m1->y ; k++){
+
+                    v += m1->v[i][k] * m2->v[k][j];
+
+                }
+                setValueMatrix(m,i,j,v);
+                v=0;
+            }
+
+        }
+        return m;
+    }else{
+        return newMatrix(1,1);
+    }
+}
+void addVecF2Row(matrix m,vecF v,int row){
+    if(m == NULL){
+        printf("No matrix");
+    }else{
+        if(m->x < row){
+            printf("Out of index\n");
+        }else{
+            m->v[row][0] = v.x;
+            m->v[row][1] = v.y;
+            m->v[row][2] = v.z;
+        }
+    }
+}
+void freeMatrix(matrix m){
+    int i;
+    for(i = 0 ; i < m->x ; i++){
+        free(m->v[i]);
+    }
+    free(m);
+}
+//Testing:
+void printmMatrix(matrix m){
+    int i,j;
+    for(i = 0 ; i < m->x ; i++){
+        for(j = 0 ; j < m->y ; j++){
+            printf("| %f |",m->v[i][j]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
 //------------------------------------------------------------------------------------------------//
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //----------------------------------------Color--------------------------------------------------//
@@ -1286,6 +1396,124 @@ void printSpot(spot sp){
 //--------------------------------------Curve--------------------------------------------------//
 float hermiteMT[4][4]={{2,-2,1,1},{-3,3,-2,-1},{0,0,1,0},{1,0,0,0}};
 
+curve newCurve(matrix param,int times,char type,color c1){
+    int i;
+    float x,y,z;
+    curve c = (curve)malloc(sizeof(Curve));
+    c->vectors = (vecF*)malloc(sizeof(vecF)*times);
+    float t = 1.0/times;
+    c->dT = t;
+    c->type = type;
+    c->c1 = c1;
+    if(type == 'h')
+        c->param = productMatrix(hermiteMatrix(),param);
+    if(type == 'b')
+        c->param = productMatrix(bezierMatrix(),param);
+    for(i = 0 ; i < times ; i++){
+        x = (t*t*t*c->param->v[0][0]) + (t*t*c->param->v[1][0]) + t*c->param->v[2][0] + c->param->v[3][0];
+        y = (t*t*t*c->param->v[0][1]) + (t*t*c->param->v[1][1]) + t*c->param->v[2][1] + c->param->v[3][1];
+        z = (t*t*t*c->param->v[0][2]) + (t*t*c->param->v[1][2]) + t*c->param->v[2][2] + c->param->v[3][2];
+        c->vectors[i] = newVecF(x,y,z);
+        t+=c->dT;
+    }
+    return c;
+}
+void rasterCurve(curve c,resolution res,int scale){
+    vecI v1,v2;
+    vecF pre;
+    int i;
+    line l;
+    pre = c->vectors[0];
+    resizeVecF(&pre,scale);
+    v2 = roundVecF(pre);
+    for(i = 0 ; i < 1/c->dT ; i++){
+        pre = c->vectors[i];
+        resizeVecF(&pre,scale);
+        v1 = roundVecF(pre);
+        l = newLine(v1,v2);
+        rasterLine(l,res,c->c1,0);
+        freeLine(l);
+        v2 = v1;
+    }
+}
+void rasterCurves(listCurves lc,resolution res, int scale){
+    vecI v1,v2;
+    vecF pre;
+    int i,j;
+    line l;
+    for(j = 0 ; j < lc->length ; j++){
+        curve c = getListCurves(lc,j);
+        pre = c->vectors[0];
+        resizeVecF(&pre,scale);
+        v2 = roundVecF(pre);
+        for(i = 0 ; i < 1/c->dT ; i++){
+            pre = c->vectors[i];
+            resizeVecF(&pre,scale);
+            v1 = roundVecF(pre);
+            l = newLine(v1,v2);
+            rasterLine(l,res,c->c1,0);
+            freeLine(l);
+            v2 = v1;
+        }
+    }
+
+}
+void freeCurve(curve c){
+    freeMatrix(c->param);
+    free(c->vectors);
+    free(c);
+}
+
+listCurves startListCurves(curve c){
+    listCurves l = (listCurves)malloc(sizeof(ListCurves));
+    l->c = c;
+    l->index =0;
+    l->length = 1;
+    l->next = NULL;
+    return l;
+}
+void addListCurves(listCurves l, curve c){
+    if(l->next == NULL){
+        l->next = startListCurves(c);
+        l->next->index = l->index +1;
+        l->length++;
+
+    }else{
+        l->length++;
+        addListCurves(l->next,c);
+    }
+}
+
+curve getListCurves(listCurves l, int index){
+    if(l->index == index)
+        return l->c;
+    else{
+        if(l->next == NULL){
+            return l->next->c;
+        }else{
+            return getListCurves(l->next,index);
+        }
+    }
+}
+void freeListCurves(listCurves l){
+    if(l->next == NULL){
+        freeCurve(l->c);
+        free(l);
+    }else{
+        freeListCurves(l->next);
+        freeCurve(l->c);
+        free(l);
+    }
+}
+
+void printCurve(curve c){
+    int i;
+    printf("dt: %f\n",c->dT);
+    printmMatrix(c->param);
+    for (i = 0; i < 1/c->dT; i++) {
+        printVecF("v: " , c->vectors[i]);
+    }
+}
 //--------------------------------------------------------------------------------------------//
 /////////////////////////////////////////////////////////////////////////////////////////////////
 //------------------------------------Miscellaneous--------------------------------------------//

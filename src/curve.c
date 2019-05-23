@@ -1,42 +1,81 @@
-#include <myGraphics.h>
+#include<myGraphics.h>
 
-int main(int argc, char *argv[]) {
+//float t,x,y,param[4][3] ={{-3,0,0},{3,4,0},{-1,1,0},{-4,3,0}};
 
-    //The numbers of points is given in the arguments
-    vecI v1,v2;
-    line l;
-    color white = newColor(255,255,255);
-    int i,times = atoi(argv[1]);
-    float t,x,y,param[4][3] ={{-3,0,0},{3,4,0},{-1,1,0},{-4,3,0}};
-    float part = 1.0/times;
+listCurves loadSettings(){
+    FILE * doc;
+    char buffer[100];
+    doc = fopen("curveS","r");
+    vecF v;
+    listCurves lc=NULL;
+    matrix m = newMatrix(4,3);
+    color c1;
+    curve c;
 
-    x = (30*param[3][0])-50;
-    y = (30*param[3][1])-50;
-    v2 = newVecI(x,y,0);
+    while (fgets(buffer,100,doc)) {
+        if(buffer[0]=='/')
+            break;
+        if(buffer[0] == 'b'){
+            fgets(buffer,100,doc);
+            v = newStrVecF(buffer);
+            addVecF2Row(m,v,0);
+            fgets(buffer,100,doc);
+            v = newStrVecF(buffer);
+            addVecF2Row(m,v,1);
+            fgets(buffer,100,doc);
+            v = newStrVecF(buffer);
+            addVecF2Row(m,v,2);
+            fgets(buffer,100,doc);
+            v = newStrVecF(buffer);
+            addVecF2Row(m,v,3);
+            fgets(buffer,100,doc);
+            c1.r = atoi(strtok(buffer," "));
+            c1.g = atoi(strtok(NULL," "));
+            c1.b = atoi(strtok(NULL," "));
+            c = newCurve(m,100,'b',c1);
+            if(lc){
+                addListCurves(lc,c);
+            }else{
+                lc = startListCurves(c);
+            }
+        }
 
-    for(i = 0 ; i <= times ; i++){
+        if(buffer[0] == 'h'){
+            fgets(buffer,100,doc);
+            v = newStrVecF(buffer);
+            addVecF2Row(m,v,0);
+            fgets(buffer,100,doc);
+            v = newStrVecF(buffer);
+            addVecF2Row(m,v,1);
+            fgets(buffer,100,doc);
+            v = newStrVecF(buffer);
+            addVecF2Row(m,v,2);
+            fgets(buffer,100,doc);
+            v = newStrVecF(buffer);
+            addVecF2Row(m,v,3);
+            fgets(buffer,100,doc);
+            c1.r = atoi(strtok(buffer," "));
+            c1.g = atoi(strtok(NULL," "));
+            c1.b = atoi(strtok(NULL," "));
+            c = newCurve(m,100,'h',c1);
+            if(lc){
+                addListCurves(lc,c);
+            }else{
+                lc = startListCurves(c);
+            }
+        }
 
-        t=i*part;
-        x = (t*t*t*param[0][0]) + (t*t*param[1][0]) + t*param[2][0] + param[3][0];
-        y = (t*t*t*param[0][1]) + (t*t*param[1][1]) + t*param[2][1] + param[3][1];
 
-        //scaling
-        x*=30;
-        y*=30;
-        x-=50;
-        y-=50;
-
-        v1 = newVecI(x,y,0);
-        l = newLine(v1,v2);
-        // l is a line from v1 to v2
-        rasterLine(l,FHD,white,0);
-        //Puts in a FHD raster a line 'l' of color white with no Z-buffer (0)
-        v2 = v1;
-        freeLine(l);
-        //printVector(v1);
     }
+    freeMatrix(m);
+    return lc;
+}
+
+int main(int argc, char const *argv[]) {
+    listCurves lc = loadSettings();
+    rasterCurves(lc,FHD,50);
     printPPM(FHD);
-    //print the FHD raster in PPM format
-    //Other formats QVGA & HD
+    //printCurve(c);
+    freeListCurves(lc);
     return 0;
 }

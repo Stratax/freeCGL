@@ -11,7 +11,7 @@ void loadSettings(model *m, camera *c, listLRad *lr, listLSpot *lp){
     FILE *doc;
     char buffer[100];
     char aux[100];
-    doc = fopen("settings","r");
+    doc = fopen("lightS","r");
     material mat;
     spot sp;
     radial rd;

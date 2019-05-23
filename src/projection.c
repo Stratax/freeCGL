@@ -3,9 +3,7 @@
 int main(int argc, char *argv[]) {
 
     initZBuffer(-100000);
-    color white,black;
-
-    black = newColor(0,0,0);
+    color white;
     white = newColor(255,255,255);
 
     material mat = newMaterial(white,2);

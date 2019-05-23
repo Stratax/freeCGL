@@ -66,6 +66,26 @@
     void printVecF(char * label,vecF v);
     //-----------------------------------------------------------------------------//
     /////////////////////////////////////////////////////////////////////////////////
+    //----------------------------------Matrix------------------------------------//
+    typedef struct{
+        int x,y;
+        float **v;
+    }Matrix;
+
+    typedef Matrix *matrix;
+
+    matrix newMatrix(int x, int y);
+    matrix hermiteMatrix();
+    matrix bezierMatrix();
+    void setValueMatrix(matrix m,int x, int y, float v);
+    void clearMatrix(matrix m);
+    matrix productMatrix(matrix m1, matrix m2);
+    void addVecF2Row(matrix m,vecF v,int row);
+    void freeMatrix(matrix m);
+    //Testing:
+    void printmMatrix(matrix m);
+    //-----------------------------------------------------------------------------//
+    /////////////////////////////////////////////////////////////////////////////////
     //-----------------------------------------Colors------------------------------//
     typedef struct{
         unsigned char r,g,b;
@@ -218,7 +238,36 @@
     //-----------------------------------------------------------------------------//
     /////////////////////////////////////////////////////////////////////////////////
     //--------------------------------- Curve--------------------------------------//
-    
+    typedef struct{
+        vecF *vectors;
+        float dT;
+        matrix param;
+        char type;//'b' : bezier 'h' : hermite
+        color c1;
+    }Curve;
+
+    typedef Curve *curve;
+
+    curve newCurve(matrix param,int times,char type,color c1);
+    void rasterCurve(curve c,resolution res,int scale);
+    void freeCurve(curve c);
+
+    typedef struct LISTCURVES{
+        curve c;
+        int index,length;
+        struct LISTCURVES * next;
+    }ListCurves;
+    typedef ListCurves * listCurves;
+
+    listCurves startListCurves(curve c);
+    void addListCurves(listCurves l, curve c);
+    curve getListCurves(listCurves l, int index);
+    void rasterCurves(listCurves lc,resolution res, int scale);
+    void freeListCurves(listCurves l);
+
+
+    //Testing:
+    void printCurve(curve c);
     //-----------------------------------------------------------------------------//
     /////////////////////////////////////////////////////////////////////////////////
     //-----------------------------Miscellaneous-----------------------------------//
