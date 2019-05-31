@@ -14,7 +14,7 @@ listCurves loadSettings(){
 
     while (fgets(buffer,100,doc)) {
         if(buffer[0]=='/')
-            break;
+            continue;
         if(buffer[0] == 'b'){
             fgets(buffer,100,doc);
             v = newStrVecF(buffer);
@@ -72,8 +72,10 @@ listCurves loadSettings(){
 }
 
 int main(int argc, char const *argv[]) {
+    color co = newColor(220,220,220);
+    clearRaster(FHD,co);
     listCurves lc = loadSettings();
-    rasterCurves(lc,FHD,50);
+    rasterCurves(lc,FHD,100);
     printPPM(FHD);
     //printCurve(c);
     freeListCurves(lc);

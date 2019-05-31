@@ -1,0 +1,18 @@
+                    Instituto Politécnico Nacional
+                    Escuela Superior de Cómputo
+
+Computer Graphics
+
+López Calderón Adrián Alberto
+2015630554
+3CV6
+
+Note>
+    the file curveS and lightS are the configurations for the practices
+    curve.c and light.c
+
+    In the practice light I used all the other practices
+
+    Intructions:
+    ~$ make bin/light
+    ~$ ./bin/light > file.ppm
